@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for local development
+  postgres:
+    image: postgres:14-alpine
+    container_name: insurance-pricing-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: insurance_pricing
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - insurance-pricing-network
+
+  # API service for model inference
+  api-service:
+    build:
+      context: .
+      dockerfile: docker/api-service/Dockerfile
+    container_name: insurance-pricing-api
+    environment:
+      - MODEL_PATH=/app/models
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/insurance_pricing
+      - PORT=5000
+      - ENVIRONMENT=development
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - insurance-pricing-network
+    command: uvicorn src.ml.app:app --host 0.0.0.0 --port 5000 --reload
+
+  # ML service for model training and evaluation
+  ml-service:
+    build:
+      context: .
+      dockerfile: docker/ml-service/Dockerfile
+    container_name: insurance-pricing-ml
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/insurance_pricing
+      - OUTPUT_DIR=/app/models
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./notebooks:/app/notebooks
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - insurance-pricing-network
+    command: tail -f /dev/null  # Keep container running
+
+  # Jupyter notebook for exploration and development
+  # jupyter:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/jupyter/Dockerfile
+  #   container_name: insurance-pricing-jupyter
+  #   environment:
+  #     - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/insurance_pricing
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./models:/app/models
+  #     - ./notebooks:/app/notebooks
+  #   ports:
+  #     - "8888:8888"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - insurance-pricing-network
+  #   command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+
+  # Test runner for unit, integration, and e2e tests
+  test-runner:
+    build:
+      context: .
+      dockerfile: docker/test-runner/Dockerfile
+    container_name: insurance-pricing-test
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/insurance_pricing
+      - ENVIRONMENT=test
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./tests:/app/tests
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-service:
+        condition: service_started
+    networks:
+      - insurance-pricing-network
+    command: tail -f /dev/null  # Keep container running
+
+  # Prefect server for workflow orchestration
+  prefect-server:
+    image: prefecthq/prefect:2-python3.9
+    container_name: insurance-pricing-prefect
+    environment:
+      - PREFECT_API_URL=http://0.0.0.0:4200/api
+      - PREFECT_UI_URL=http://0.0.0.0:4200
+    volumes:
+      - ./infrastructure/prefect:/opt/prefect/flows
+      - prefect_data:/root/.prefect
+    ports:
+      - "4200:4200"
+    networks:
+      - insurance-pricing-network
+    command: prefect server start --host 0.0.0.0
+
+  # Prefect agent for executing flows
+  prefect-agent:
+    image: prefecthq/prefect:2-python3.9
+    container_name: insurance-pricing-prefect-agent
+    environment:
+      - PREFECT_API_URL=http://prefect-server:4200/api
+    volumes:
+      - ./infrastructure/prefect:/opt/prefect/flows
+      - ./src:/opt/prefect/src
+      - ./models:/opt/prefect/models
+    depends_on:
+      - prefect-server
+    networks:
+      - insurance-pricing-network
+    command: prefect agent start -q default
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:v2.30.0
+    container_name: insurance-pricing-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - insurance-pricing-network
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:8.2.0
+    container_name: insurance-pricing-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - insurance-pricing-network
+
+networks:
+  insurance-pricing-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  prefect_data:
+  prometheus_data:
+  grafana_data:

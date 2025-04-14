@@ -1,0 +1,395 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for insurance pricing model infrastructure'
+
+Parameters:
+  Environment:
+    Description: Environment (dev, staging, prod)
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  
+  BucketName:
+    Description: Name of the S3 bucket for storing models and data
+    Type: String
+    Default: insurance-pricing-models
+  
+  ApiStageName:
+    Description: Stage name for the API Gateway
+    Type: String
+    Default: v1
+  
+  ModelTrainingSchedule:
+    Description: Schedule expression for model training (cron or rate)
+    Type: String
+    Default: rate(1 day)
+  
+  ModelTrainingPolicies:
+    Description: Number of policies to generate for model training
+    Type: Number
+    Default: 5000
+  
+  ModelType:
+    Description: Type of model to train (decision_tree or random_forest)
+    Type: String
+    Default: decision_tree
+    AllowedValues:
+      - decision_tree
+      - random_forest
+
+Resources:
+  # S3 Bucket for storing models and data
+  ModelsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${BucketName}-${Environment}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 90
+  
+  # IAM Role for Lambda functions
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${ModelsBucket}
+                  - !Sub arn:aws:s3:::${ModelsBucket}/*
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:insurance-pricing/*
+  
+  # IAM Role for CloudWatch Events
+  EventsExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt ModelTrainingLambda.Arn
+  
+  # Secrets Manager for storing credentials
+  SnowflakeCredentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: insurance-pricing/snowflake-credentials
+      Description: Snowflake credentials for insurance pricing model
+      SecretString: !Sub '{"account":"your-account","user":"your-username","password":"your-password","database":"INSURANCE_PRICING","schema":"ML_MODELS","warehouse":"INSURANCE_PRICING_WH","role":"INSURANCE_PRICING_APP"}'
+  
+  # Lambda function for model inference
+  ModelInferenceLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub insurance-pricing-inference-${Environment}
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref ModelsBucket
+        S3Key: lambda/inference.zip
+      Runtime: python3.9
+      Timeout: 30
+      MemorySize: 1024
+      Environment:
+        Variables:
+          MODEL_BUCKET: !Ref ModelsBucket
+          SNOWFLAKE_CREDENTIALS_SECRET: !Ref SnowflakeCredentials
+          ENVIRONMENT: !Ref Environment
+  
+  # Lambda function for model training
+  ModelTrainingLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub insurance-pricing-training-${Environment}
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref ModelsBucket
+        S3Key: lambda/training.zip
+      Runtime: python3.9
+      Timeout: 900
+      MemorySize: 2048
+      Environment:
+        Variables:
+          MODEL_BUCKET: !Ref ModelsBucket
+          SNOWFLAKE_CREDENTIALS_SECRET: !Ref SnowflakeCredentials
+          ENVIRONMENT: !Ref Environment
+          NUM_POLICIES: !Ref ModelTrainingPolicies
+          MODEL_TYPE: !Ref ModelType
+  
+  # CloudWatch Event Rule for scheduled model training
+  ModelTrainingScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub insurance-pricing-training-schedule-${Environment}
+      Description: Schedule for insurance pricing model training
+      ScheduleExpression: !Ref ModelTrainingSchedule
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ModelTrainingLambda.Arn
+          Id: ModelTrainingTarget
+          RoleArn: !GetAtt EventsExecutionRole.Arn
+  
+  # Permission for CloudWatch Events to invoke Lambda
+  ModelTrainingPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ModelTrainingLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ModelTrainingScheduleRule.Arn
+  
+  # API Gateway REST API
+  PricingApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub insurance-pricing-api-${Environment}
+      Description: API for insurance pricing model
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+  
+  # API Gateway Resource for pricing endpoint
+  PricingResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PricingApi
+      ParentId: !GetAtt PricingApi.RootResourceId
+      PathPart: pricing
+  
+  # API Gateway Method for pricing endpoint
+  PricingMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PricingApi
+      ResourceId: !Ref PricingResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ModelInferenceLambda.Arn}/invocations
+  
+  # API Gateway Resource for health endpoint
+  HealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PricingApi
+      ParentId: !GetAtt PricingApi.RootResourceId
+      PathPart: health
+  
+  # API Gateway Method for health endpoint
+  HealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PricingApi
+      ResourceId: !Ref HealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ModelInferenceLambda.Arn}/invocations
+  
+  # API Gateway Resource for model endpoint
+  ModelResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PricingApi
+      ParentId: !GetAtt PricingApi.RootResourceId
+      PathPart: model
+  
+  # API Gateway Method for model endpoint
+  ModelMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PricingApi
+      ResourceId: !Ref ModelResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ModelInferenceLambda.Arn}/invocations
+  
+  # API Gateway Deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - PricingMethod
+      - HealthMethod
+      - ModelMethod
+    Properties:
+      RestApiId: !Ref PricingApi
+      StageName: !Ref ApiStageName
+  
+  # Permission for API Gateway to invoke Lambda
+  ApiGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ModelInferenceLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PricingApi}/*
+  
+  # CloudWatch Dashboard for monitoring
+  MonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub insurance-pricing-${Environment}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Invocations", "FunctionName", "${ModelInferenceLambda}" ],
+                  [ ".", "Errors", ".", "." ],
+                  [ ".", "Duration", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Model Inference Lambda",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Invocations", "FunctionName", "${ModelTrainingLambda}" ],
+                  [ ".", "Errors", ".", "." ],
+                  [ ".", "Duration", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Model Training Lambda",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 6,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApiGateway", "Count", "ApiName", "${PricingApi}" ],
+                  [ ".", "4XXError", ".", "." ],
+                  [ ".", "5XXError", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "API Gateway",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 6,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/S3", "BucketSizeBytes", "BucketName", "${ModelsBucket}" ],
+                  [ ".", "NumberOfObjects", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "S3 Bucket",
+                "period": 86400
+              }
+            }
+          ]
+        }
+
+Outputs:
+  ApiEndpoint:
+    Description: URL of the API Gateway endpoint
+    Value: !Sub https://${PricingApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}
+  
+  ModelsBucketName:
+    Description: Name of the S3 bucket for storing models and data
+    Value: !Ref ModelsBucket
+  
+  ModelInferenceLambdaArn:
+    Description: ARN of the model inference Lambda function
+    Value: !GetAtt ModelInferenceLambda.Arn
+  
+  ModelTrainingLambdaArn:
+    Description: ARN of the model training Lambda function
+    Value: !GetAtt ModelTrainingLambda.Arn
+  
+  SnowflakeCredentialsArn:
+    Description: ARN of the Snowflake credentials secret
+    Value: !Ref SnowflakeCredentials
+  
+  MonitoringDashboardUrl:
+    Description: URL of the CloudWatch dashboard
+    Value: !Sub https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${MonitoringDashboard}
