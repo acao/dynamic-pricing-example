@@ -9,10 +9,6 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# Add the project root to the Python path
-project_root = str(Path(__file__).resolve().parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
 
 import pytest
 from fastapi.testclient import TestClient

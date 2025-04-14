@@ -10,11 +10,6 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add the project root to the Python path
-project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor

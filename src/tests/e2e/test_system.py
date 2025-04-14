@@ -10,11 +10,6 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-# Add the project root to the Python path
-project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from fastapi.testclient import TestClient
 
 # Try different import approaches to handle both local and CI environments
