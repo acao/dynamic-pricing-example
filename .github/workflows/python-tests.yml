@@ -16,7 +16,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-
     - name: Install uv
       uses: astral-sh/setup-uv@v5
       with:
@@ -26,22 +25,25 @@ jobs:
     - name: Install dependencies
       run: |
         uv pip install -r requirements.txt
-    
+        # Install the package in development mode to fix import issues
+        uv pip install -e .
+  
     - name: Run unit tests with ${{ matrix.python-version }}
       run: |
-        uv run -m pytest src/tests/unit/ -v
+        # Set PYTHONPATH to include the current directory
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m pytest src/tests/unit/ -v
     
     - name: Run integration tests with ${{ matrix.python-version }}
       run: |
-        uv run -m pytest src/tests/integration/ -v
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m pytest src/tests/integration/ -v
     
     - name: Run end-to-end tests with ${{ matrix.python-version }}
       run: |
-        uv run -m pytest src/tests/e2e/ -v
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m pytest src/tests/e2e/ -v
     
     - name: Generate coverage report
       run: |
-        uv run -m pytest --cov=src --cov-report=xml
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m pytest --cov=src --cov-report=xml
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

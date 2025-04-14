@@ -2,40 +2,41 @@ name: Code Quality
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: |
-          uv pip install -r requirements.txt
-          uv pip install black isort flake8 mypy
-
-      - name: Check formatting with black
-        run: |
-          uv run -m black --check src/
-
-      # - name: Check imports with isort
-      #   run: |
-      #     uv run -m isort --check-only --profile black src/
-
-      - name: Lint with flake8
-        run: |
-          # uv run -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-          uv run -m flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-      # - name: Type check with mypy
-      #   run: |
-      #     uv run -m mypy src/
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        uv pip install black isort flake8 mypy
+        # Install the package in development mode to fix import issues
+        uv pip install -e .
+    
+    - name: Check formatting with black
+      run: |
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m black --check src/
+    
+    - name: Check imports with isort
+      run: |
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m isort --check-only --profile black src/
+    
+    - name: Lint with flake8
+      run: |
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Type check with mypy
+      run: |
+        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m mypy src/
