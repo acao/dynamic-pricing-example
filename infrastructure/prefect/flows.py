@@ -4,10 +4,14 @@ Prefect flows for insurance pricing model training and deployment.
 import json
 import logging
 import os
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+
+# Add the project root to the Python path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import boto3
 import joblib

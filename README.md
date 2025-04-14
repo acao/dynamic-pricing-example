@@ -243,6 +243,63 @@ curl -X POST http://localhost:5000/pricing \
 - Improved AWS deployment with CloudFormation
 - Added Prefect workflows for orchestration
 
+## Running Prefect Training Locally
+
+You can use Prefect to orchestrate the model training process. This provides better tracking, logging, and the ability to schedule and monitor training runs.
+
+### Basic Local Training
+
+To run a basic training job locally with Prefect:
+
+```bash
+# Navigate to the infrastructure/prefect directory
+cd infrastructure/prefect
+
+# Run with default parameters (1000 policies, decision tree model)
+uv run run_local.py
+
+# Run with custom parameters
+uv run run_local.py --num-training-policies 5000 --model-type random_forest --max-depth 15 --output-dir ../../models
+```
+
+### Advanced Options
+
+The Prefect flow supports additional options for cloud deployment:
+
+```bash
+# Upload model to S3 (requires AWS credentials)
+uv run run_local.py --upload-to-s3 --bucket-name your-model-bucket
+
+# Register model in Snowflake (requires Snowflake credentials)
+uv run run_local.py --register-in-snowflake
+
+# Upload training data to Snowflake
+uv run run_local.py --upload-data-to-snowflake
+
+# Use stored credentials blocks
+uv run run_local.py --aws-credentials-block "aws-creds" --snowflake-credentials-block "snowflake-creds"
+```
+
+### Setting Up Prefect Credentials
+
+To use cloud services, you'll need to set up Prefect credential blocks:
+
+```bash
+# Install Prefect CLI
+pip install prefect
+
+# Login to Prefect Cloud (optional)
+prefect cloud login
+
+# Create AWS credentials block
+prefect block register -m prefect_aws.credentials
+prefect block create aws-credentials --name aws-creds
+
+# Create Snowflake credentials block
+prefect block register -m prefect_snowflake
+prefect block create snowflake-credentials --name snowflake-creds
+```
+
 ## CI/CD Pipeline
 
 This project uses GitHub Actions for continuous integration and deployment:
