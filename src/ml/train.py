@@ -1,6 +1,7 @@
 """
 Script to train the insurance pricing model.
 """
+
 import argparse
 import logging
 import os
@@ -33,7 +34,7 @@ def train_model(
     random_state: int = 42,
 ) -> str:
     """Train the insurance pricing model.
-    
+
     Args:
         num_policies: Number of policies to generate for training
         test_size: Fraction of data to use for testing
@@ -41,30 +42,32 @@ def train_model(
         model_params: Parameters for the model
         output_dir: Directory to save the model
         random_state: Random seed for reproducibility
-        
+
     Returns:
         Path to the saved model
     """
     logger.info(f"Generating {num_policies} policies for training")
-    
+
     # Generate synthetic data
     data_generator = InsuranceDataGenerator(seed=random_state)
     policies, premiums = data_generator.generate_dataset(num_policies)
-    
+
     logger.info(f"Training {model_type} model")
-    
+
     # Create and train model
     model = InsurancePricingModel(model_type=model_type, model_params=model_params)
-    metrics = model.train(policies, premiums, test_size=test_size, random_state=random_state)
-    
+    metrics = model.train(
+        policies, premiums, test_size=test_size, random_state=random_state
+    )
+
     logger.info(f"Model metrics: {metrics}")
-    
+
     # Save model
     os.makedirs(output_dir, exist_ok=True)
     model_path = model.save(output_dir)
-    
+
     logger.info(f"Model saved to {model_path}")
-    
+
     return model_path
 
 
@@ -75,27 +78,27 @@ def tune_model(
     random_state: int = 42,
 ) -> Dict:
     """Tune the hyperparameters of the insurance pricing model.
-    
+
     Args:
         num_policies: Number of policies to generate for training
         model_type: Type of model to use ("decision_tree" or "random_forest")
         output_dir: Directory to save the model
         random_state: Random seed for reproducibility
-        
+
     Returns:
         Dictionary with tuning results
     """
     logger.info(f"Generating {num_policies} policies for hyperparameter tuning")
-    
+
     # Generate synthetic data
     data_generator = InsuranceDataGenerator(seed=random_state)
     policies, premiums = data_generator.generate_dataset(num_policies)
-    
+
     logger.info(f"Tuning {model_type} model")
-    
+
     # Create model
     model = InsurancePricingModel(model_type=model_type)
-    
+
     # Define parameter grid
     if model_type == "decision_tree":
         param_grid = {
@@ -114,21 +117,21 @@ def tune_model(
         }
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
-    
+
     # Tune hyperparameters
     tuning_results = model.tune_hyperparameters(
         policies, premiums, param_grid, cv=5, scoring="neg_mean_squared_error"
     )
-    
+
     logger.info(f"Best parameters: {tuning_results['best_params']}")
     logger.info(f"Best score: {tuning_results['best_score']}")
-    
+
     # Save model
     os.makedirs(output_dir, exist_ok=True)
     model_path = model.save(output_dir)
-    
+
     logger.info(f"Model saved to {model_path}")
-    
+
     return tuning_results
 
 
@@ -136,10 +139,16 @@ def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Train the insurance pricing model")
     parser.add_argument(
-        "--num-policies", type=int, default=1000, help="Number of policies to generate for training"
+        "--num-policies",
+        type=int,
+        default=1000,
+        help="Number of policies to generate for training",
     )
     parser.add_argument(
-        "--test-size", type=float, default=0.2, help="Fraction of data to use for testing"
+        "--test-size",
+        type=float,
+        default=0.2,
+        help="Fraction of data to use for testing",
     )
     parser.add_argument(
         "--model-type",
@@ -151,15 +160,13 @@ def main():
     parser.add_argument(
         "--output-dir", type=str, default="./models", help="Directory to save the model"
     )
-    parser.add_argument(
-        "--tune", action="store_true", help="Tune hyperparameters"
-    )
+    parser.add_argument("--tune", action="store_true", help="Tune hyperparameters")
     parser.add_argument(
         "--random-state", type=int, default=42, help="Random seed for reproducibility"
     )
-    
+
     args = parser.parse_args()
-    
+
     if args.tune:
         tune_model(
             num_policies=args.num_policies,

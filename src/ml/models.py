@@ -1,6 +1,7 @@
 """
 Data models for the ML service.
 """
+
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
@@ -49,6 +50,7 @@ class PolicyStatus(str, Enum):
 @dataclass
 class Driver:
     """Driver information for insurance pricing."""
+
     first_name: str
     last_name: str
     date_of_birth: date
@@ -59,27 +61,38 @@ class Driver:
     marital_status: Optional[MaritalStatus] = None
     occupation: Optional[str] = None
     driver_id: UUID = field(default_factory=uuid4)
-    
+
     @property
     def age(self) -> int:
         """Calculate the driver's age."""
         today = date.today()
-        return today.year - self.date_of_birth.year - (
-            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        return (
+            today.year
+            - self.date_of_birth.year
+            - (
+                (today.month, today.day)
+                < (self.date_of_birth.month, self.date_of_birth.day)
+            )
         )
-    
+
     @property
     def driving_experience(self) -> int:
         """Calculate the driver's driving experience in years."""
         today = date.today()
-        return today.year - self.license_issue_date.year - (
-            (today.month, today.day) < (self.license_issue_date.month, self.license_issue_date.day)
+        return (
+            today.year
+            - self.license_issue_date.year
+            - (
+                (today.month, today.day)
+                < (self.license_issue_date.month, self.license_issue_date.day)
+            )
         )
 
 
 @dataclass
 class Vehicle:
     """Vehicle information for insurance pricing."""
+
     make: str
     model: str
     year: int
@@ -89,7 +102,7 @@ class Vehicle:
     annual_mileage: int
     anti_theft_device: bool = False
     vehicle_id: UUID = field(default_factory=uuid4)
-    
+
     @property
     def vehicle_age(self) -> int:
         """Calculate the vehicle's age."""
@@ -99,6 +112,7 @@ class Vehicle:
 @dataclass
 class DrivingHistory:
     """Driving history information for insurance pricing."""
+
     incident_type: IncidentType
     incident_date: date
     severity: IncidentSeverity
@@ -110,6 +124,7 @@ class DrivingHistory:
 @dataclass
 class Location:
     """Location information for insurance pricing."""
+
     address_line1: str
     city: str
     state: str
@@ -123,6 +138,7 @@ class Location:
 @dataclass
 class PricingFactors:
     """Pricing factors for insurance pricing."""
+
     credit_score: Optional[float] = None
     insurance_score: Optional[float] = None
     territory_code: Optional[str] = None
@@ -136,6 +152,7 @@ class PricingFactors:
 @dataclass
 class Policy:
     """Policy information for insurance pricing."""
+
     effective_date: date
     expiration_date: date
     drivers: List[Driver]
@@ -154,6 +171,7 @@ class Policy:
 @dataclass
 class ModelVersion:
     """Model version information."""
+
     model_name: str
     model_version: str
     model_path: str
@@ -166,6 +184,7 @@ class ModelVersion:
 @dataclass
 class PricingRequest:
     """Request for insurance pricing."""
+
     drivers: List[Dict]
     vehicles: List[Dict]
     locations: List[Dict]
@@ -178,6 +197,7 @@ class PricingRequest:
 @dataclass
 class PricingResponse:
     """Response for insurance pricing."""
+
     policy_id: UUID
     base_premium: float
     final_premium: float

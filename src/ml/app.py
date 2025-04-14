@@ -1,6 +1,7 @@
 """
 FastAPI application for the ML service.
 """
+
 import logging
 import os
 from datetime import date, datetime
@@ -14,9 +15,19 @@ from pydantic import BaseModel, Field
 
 from src.ml.model import InsurancePricingModel, PricingService
 from src.ml.models import (
-    Driver, DrivingHistory, Gender, IncidentSeverity, IncidentType,
-    Location, MaritalStatus, Policy, PricingFactors, PricingRequest,
-    PricingResponse, Vehicle, VehicleUse
+    Driver,
+    DrivingHistory,
+    Gender,
+    IncidentSeverity,
+    IncidentType,
+    Location,
+    MaritalStatus,
+    Policy,
+    PricingFactors,
+    PricingRequest,
+    PricingResponse,
+    Vehicle,
+    VehicleUse,
 )
 
 # Configure logging
@@ -58,6 +69,7 @@ else:
 # Pydantic models for API
 class DriverRequest(BaseModel):
     """Driver information for API requests."""
+
     first_name: str
     last_name: str
     date_of_birth: str
@@ -71,6 +83,7 @@ class DriverRequest(BaseModel):
 
 class VehicleRequest(BaseModel):
     """Vehicle information for API requests."""
+
     make: str
     model: str
     year: int
@@ -83,6 +96,7 @@ class VehicleRequest(BaseModel):
 
 class DrivingHistoryRequest(BaseModel):
     """Driving history information for API requests."""
+
     incident_type: str
     incident_date: str
     severity: str
@@ -92,6 +106,7 @@ class DrivingHistoryRequest(BaseModel):
 
 class LocationRequest(BaseModel):
     """Location information for API requests."""
+
     address_line1: str
     city: str
     state: str
@@ -103,6 +118,7 @@ class LocationRequest(BaseModel):
 
 class PricingFactorsRequest(BaseModel):
     """Pricing factors for API requests."""
+
     credit_score: Optional[float] = None
     insurance_score: Optional[float] = None
     territory_code: Optional[str] = None
@@ -114,17 +130,25 @@ class PricingFactorsRequest(BaseModel):
 
 class PolicyRequest(BaseModel):
     """Policy information for API requests."""
+
     effective_date: str
     expiration_date: str
-    drivers: List[DriverRequest] = Field(..., min_length=1, description="At least one driver is required")
-    vehicles: List[VehicleRequest] = Field(..., min_length=1, description="At least one vehicle is required")
-    locations: List[LocationRequest] = Field(..., min_length=1, description="At least one location is required")
+    drivers: List[DriverRequest] = Field(
+        ..., min_length=1, description="At least one driver is required"
+    )
+    vehicles: List[VehicleRequest] = Field(
+        ..., min_length=1, description="At least one vehicle is required"
+    )
+    locations: List[LocationRequest] = Field(
+        ..., min_length=1, description="At least one location is required"
+    )
     driving_history: List[DrivingHistoryRequest] = []
     pricing_factors: Optional[PricingFactorsRequest] = None
 
 
 class PricingResponseModel(BaseModel):
     """Response model for pricing API."""
+
     policy_id: str
     base_premium: float
     final_premium: float
@@ -136,6 +160,7 @@ class PricingResponseModel(BaseModel):
 
 class ModelInfoResponse(BaseModel):
     """Response model for model info API."""
+
     model_id: str
     model_name: str
     model_version: str
@@ -146,6 +171,7 @@ class ModelInfoResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Response model for health check API."""
+
     status: str
     timestamp: str
 
@@ -164,14 +190,14 @@ def _convert_driver(driver_req: DriverRequest) -> Driver:
             gender_val = Gender(driver_req.gender.lower())
         except ValueError:
             gender_val = None
-    
+
     marital_status_val = None
     if driver_req.marital_status:
         try:
             marital_status_val = MaritalStatus(driver_req.marital_status.lower())
         except ValueError:
             marital_status_val = None
-    
+
     return Driver(
         first_name=driver_req.first_name,
         last_name=driver_req.last_name,
@@ -191,7 +217,7 @@ def _convert_vehicle(vehicle_req: VehicleRequest) -> Vehicle:
         primary_use_val = VehicleUse(vehicle_req.primary_use.lower())
     except ValueError:
         primary_use_val = VehicleUse.PERSONAL
-    
+
     return Vehicle(
         make=vehicle_req.make,
         model=vehicle_req.model,
@@ -210,12 +236,12 @@ def _convert_driving_history(history_req: DrivingHistoryRequest) -> DrivingHisto
         incident_type_val = IncidentType(history_req.incident_type.lower())
     except ValueError:
         incident_type_val = IncidentType.ACCIDENT
-    
+
     try:
         severity_val = IncidentSeverity(history_req.severity.lower())
     except ValueError:
         severity_val = IncidentSeverity.MINOR
-    
+
     return DrivingHistory(
         incident_type=incident_type_val,
         incident_date=_parse_date(history_req.incident_date),
@@ -238,11 +264,13 @@ def _convert_location(location_req: LocationRequest) -> Location:
     )
 
 
-def _convert_pricing_factors(factors_req: Optional[PricingFactorsRequest]) -> Optional[PricingFactors]:
+def _convert_pricing_factors(
+    factors_req: Optional[PricingFactorsRequest],
+) -> Optional[PricingFactors]:
     """Convert pricing factors request to pricing factors object."""
     if not factors_req:
         return None
-    
+
     return PricingFactors(
         credit_score=factors_req.credit_score,
         insurance_score=factors_req.insurance_score,
@@ -259,9 +287,11 @@ def _convert_policy(policy_req: PolicyRequest) -> Policy:
     drivers = [_convert_driver(driver) for driver in policy_req.drivers]
     vehicles = [_convert_vehicle(vehicle) for vehicle in policy_req.vehicles]
     locations = [_convert_location(location) for location in policy_req.locations]
-    driving_history = [_convert_driving_history(history) for history in policy_req.driving_history]
+    driving_history = [
+        _convert_driving_history(history) for history in policy_req.driving_history
+    ]
     pricing_factors = _convert_pricing_factors(policy_req.pricing_factors)
-    
+
     return Policy(
         effective_date=_parse_date(policy_req.effective_date),
         expiration_date=_parse_date(policy_req.expiration_date),
@@ -291,9 +321,9 @@ async def get_model_info():
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No model loaded",
         )
-    
+
     model_version = pricing_service.model.model_version
-    
+
     return {
         "model_id": str(model_version.model_id),
         "model_name": model_version.model_name,
@@ -310,10 +340,10 @@ async def calculate_pricing(policy_req: PolicyRequest):
     try:
         # Convert request to policy object
         policy = _convert_policy(policy_req)
-        
+
         # Calculate premium
         final_premium, factors = pricing_service.calculate_premium(policy)
-        
+
         # Create response
         response = PricingResponse(
             policy_id=policy.policy_id,
@@ -323,7 +353,7 @@ async def calculate_pricing(policy_req: PolicyRequest):
             model_id=pricing_service.model.model_version.model_id,
             model_version=pricing_service.model.model_version.model_version,
         )
-        
+
         return {
             "policy_id": str(response.policy_id),
             "base_premium": response.base_premium,

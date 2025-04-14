@@ -1,6 +1,7 @@
 """
 End-to-end tests for the insurance pricing system.
 """
+
 import json
 import os
 import subprocess
@@ -17,6 +18,7 @@ from src.data.generator import InsuranceDataGenerator
 from src.ml.app import app
 from src.ml.model import InsurancePricingModel
 
+
 # Custom JSON encoder to handle Decimal values
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -27,42 +29,42 @@ class DecimalEncoder(json.JSONEncoder):
 
 class TestSystem(unittest.TestCase):
     """End-to-end tests for the insurance pricing system."""
-    
+
     @classmethod
     def setUpClass(cls):
         """Set up test fixtures."""
         # Create a temporary directory for models
         cls.temp_dir = tempfile.TemporaryDirectory()
-        
+
         # Generate synthetic data
         data_generator = InsuranceDataGenerator(seed=42)
         policies, premiums = data_generator.generate_dataset(100)
-        
+
         # Create and train model
         cls.model = InsurancePricingModel()
         cls.model.train(policies, premiums)
-        
+
         # Save model
         cls.model_path = cls.model.save(cls.temp_dir.name)
-        
+
         # Set environment variable for model path
         os.environ["MODEL_PATH"] = cls.temp_dir.name
-        
+
         # Use FastAPI TestClient instead of starting a real server
         os.environ["MODEL_PATH"] = cls.temp_dir.name
         cls.client = TestClient(app)
-    
+
     @classmethod
     def tearDownClass(cls):
         """Clean up test fixtures."""
         # Clean up
-        
+
         # Remove temporary directory
         cls.temp_dir.cleanup()
-        
+
         # Unset environment variable
         del os.environ["MODEL_PATH"]
-    
+
     def test_health_check(self):
         """Test health check endpoint."""
         response = self.client.get("/health")
@@ -70,7 +72,7 @@ class TestSystem(unittest.TestCase):
         data = response.json()
         self.assertEqual(data["status"], "ok")
         self.assertIn("timestamp", data)
-    
+
     def test_model_info(self):
         """Test model info endpoint."""
         response = self.client.get("/model")
@@ -82,7 +84,7 @@ class TestSystem(unittest.TestCase):
         self.assertIn("is_active", data)
         self.assertIn("metrics", data)
         self.assertIn("created_at", data)
-    
+
     def test_pricing(self):
         """Test pricing endpoint."""
         # Create a sample policy request
@@ -134,10 +136,10 @@ class TestSystem(unittest.TestCase):
                 "insurance_score": 85.0,
             },
         }
-        
+
         # Send request
         response = self.client.post("/pricing", json=policy_request)
-        
+
         # Check response
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -148,7 +150,7 @@ class TestSystem(unittest.TestCase):
         self.assertIn("model_id", data)
         self.assertIn("model_version", data)
         self.assertIn("created_at", data)
-        
+
         # Check factors
         factors = data["factors"]
         self.assertIn("driver_factor", factors)
@@ -157,13 +159,13 @@ class TestSystem(unittest.TestCase):
         self.assertIn("location_factor", factors)
         self.assertIn("credit_factor", factors)
         self.assertIn("insurance_factor", factors)
-    
+
     def test_end_to_end_flow(self):
         """Test the end-to-end flow."""
         # Generate a random policy
         data_generator = InsuranceDataGenerator(seed=43)
         policy = data_generator.generate_policy()
-        
+
         # Create policy request
         policy_request = {
             "effective_date": policy.effective_date.isoformat(),
@@ -177,7 +179,9 @@ class TestSystem(unittest.TestCase):
                     "license_issue_date": driver.license_issue_date.isoformat(),
                     "license_state": driver.license_state,
                     "gender": driver.gender.value if driver.gender else None,
-                    "marital_status": driver.marital_status.value if driver.marital_status else None,
+                    "marital_status": (
+                        driver.marital_status.value if driver.marital_status else None
+                    ),
                     "occupation": driver.occupation,
                 }
                 for driver in policy.drivers
@@ -218,7 +222,7 @@ class TestSystem(unittest.TestCase):
                 for history in policy.driving_history
             ],
         }
-        
+
         if policy.pricing_factors:
             policy_request["pricing_factors"] = {
                 "credit_score": policy.pricing_factors.credit_score,
@@ -229,14 +233,14 @@ class TestSystem(unittest.TestCase):
                 "vehicle_factor": policy.pricing_factors.vehicle_factor,
                 "history_factor": policy.pricing_factors.history_factor,
             }
-        
+
         # Send request
         # Convert Decimal values to float for JSON serialization
         policy_request_str = json.dumps(policy_request, cls=DecimalEncoder)
         policy_request = json.loads(policy_request_str)
-        
+
         response = self.client.post("/pricing", json=policy_request)
-        
+
         # Check response
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -247,13 +251,15 @@ class TestSystem(unittest.TestCase):
         self.assertIn("model_id", data)
         self.assertIn("model_version", data)
         self.assertIn("created_at", data)
-        
+
         # Calculate expected premium using the model directly
         expected_premium, expected_factors = self.model.predict_with_factors([policy])
         expected_premium = expected_premium[0] * 1000.0  # Base premium is 1000.0
-        
+
         # Check that the premium is within a reasonable range
-        self.assertAlmostEqual(data["final_premium"], expected_premium, delta=expected_premium * 0.2)
+        self.assertAlmostEqual(
+            data["final_premium"], expected_premium, delta=expected_premium * 0.2
+        )
 
 
 if __name__ == "__main__":

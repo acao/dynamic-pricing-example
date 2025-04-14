@@ -1,6 +1,7 @@
 """
 Pytest configuration and fixtures for tests.
 """
+
 import os
 import tempfile
 from datetime import date, timedelta
@@ -13,8 +14,17 @@ from src.data.generator import InsuranceDataGenerator
 from src.ml.app import app
 from src.ml.model import InsurancePricingModel, PricingService
 from src.ml.models import (
-    Driver, DrivingHistory, Gender, IncidentSeverity, IncidentType,
-    Location, MaritalStatus, Policy, PricingFactors, Vehicle, VehicleUse
+    Driver,
+    DrivingHistory,
+    Gender,
+    IncidentSeverity,
+    IncidentType,
+    Location,
+    MaritalStatus,
+    Policy,
+    PricingFactors,
+    Vehicle,
+    VehicleUse,
 )
 
 
@@ -112,12 +122,12 @@ def test_client(model_path):
     # Set environment variable for model path
     old_model_path = os.environ.get("MODEL_PATH")
     os.environ["MODEL_PATH"] = os.path.dirname(model_path)
-    
+
     # Create test client
     client = TestClient(app)
-    
+
     yield client
-    
+
     # Restore environment variable
     if old_model_path is not None:
         os.environ["MODEL_PATH"] = old_model_path
