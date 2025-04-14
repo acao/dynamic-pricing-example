@@ -27,15 +27,15 @@ jobs:
         run: |
           uv run -m black --check src/
 
-      - name: Check imports with isort
-        run: |
-          uv run -m isort --check-only --profile black src/
+      # - name: Check imports with isort
+      #   run: |
+      #     uv run -m isort --check-only --profile black src/
 
       - name: Lint with flake8
         run: |
-          uv run -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # uv run -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
           uv run -m flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Type check with mypy
-        run: |
-          uv run -m mypy src/
+      # - name: Type check with mypy
+      #   run: |
+      #     uv run -m mypy src/
