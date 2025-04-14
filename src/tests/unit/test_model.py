@@ -3,30 +3,56 @@ Unit tests for the insurance pricing model.
 """
 
 import os
+import sys
 import tempfile
 import unittest
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+# Add the project root to the Python path
+project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 
-from src.data.generator import InsuranceDataGenerator
-from src.ml.model import InsurancePricingModel, PricingService
-from src.ml.models import (
-    Driver,
-    DrivingHistory,
-    Gender,
-    IncidentSeverity,
-    IncidentType,
-    Location,
-    MaritalStatus,
-    Policy,
-    PricingFactors,
-    Vehicle,
-    VehicleUse,
-)
+# Try different import approaches to handle both local and CI environments
+try:
+    from src.data.generator import InsuranceDataGenerator
+    from src.ml.model import InsurancePricingModel, PricingService
+    from src.ml.models import (
+        Driver,
+        DrivingHistory,
+        Gender,
+        IncidentSeverity,
+        IncidentType,
+        Location,
+        MaritalStatus,
+        Policy,
+        PricingFactors,
+        Vehicle,
+        VehicleUse,
+    )
+except ImportError:
+    # If the above imports fail, try relative imports
+    from data.generator import InsuranceDataGenerator
+    from ml.model import InsurancePricingModel, PricingService
+    from ml.models import (
+        Driver,
+        DrivingHistory,
+        Gender,
+        IncidentSeverity,
+        IncidentType,
+        Location,
+        MaritalStatus,
+        Policy,
+        PricingFactors,
+        Vehicle,
+        VehicleUse,
+    )
 
 
 class TestInsurancePricingModel(unittest.TestCase):

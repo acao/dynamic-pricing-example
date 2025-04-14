@@ -3,29 +3,56 @@ Pytest configuration and fixtures for tests.
 """
 
 import os
+import sys
 import tempfile
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Dict, List, Tuple
+
+# Add the project root to the Python path
+project_root = str(Path(__file__).resolve().parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 import pytest
 from fastapi.testclient import TestClient
 
-from src.data.generator import InsuranceDataGenerator
-from src.ml.app import app
-from src.ml.model import InsurancePricingModel, PricingService
-from src.ml.models import (
-    Driver,
-    DrivingHistory,
-    Gender,
-    IncidentSeverity,
-    IncidentType,
-    Location,
-    MaritalStatus,
-    Policy,
-    PricingFactors,
-    Vehicle,
-    VehicleUse,
-)
+# Try different import approaches to handle both local and CI environments
+try:
+    from src.data.generator import InsuranceDataGenerator
+    from src.ml.app import app
+    from src.ml.model import InsurancePricingModel, PricingService
+    from src.ml.models import (
+        Driver,
+        DrivingHistory,
+        Gender,
+        IncidentSeverity,
+        IncidentType,
+        Location,
+        MaritalStatus,
+        Policy,
+        PricingFactors,
+        Vehicle,
+        VehicleUse,
+    )
+except ImportError:
+    # If the above imports fail, try relative imports
+    from data.generator import InsuranceDataGenerator
+    from ml.app import app
+    from ml.model import InsurancePricingModel, PricingService
+    from ml.models import (
+        Driver,
+        DrivingHistory,
+        Gender,
+        IncidentSeverity,
+        IncidentType,
+        Location,
+        MaritalStatus,
+        Policy,
+        PricingFactors,
+        Vehicle,
+        VehicleUse,
+    )
 
 
 @pytest.fixture(scope="session")
