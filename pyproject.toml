@@ -30,3 +30,18 @@ dev = [
 
 [tool.setuptools]
 packages = ["src"]
+package-dir = {"" = "."}
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["src/tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--verbose --cov=src --cov-report=term-missing"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "e2e: End-to-end tests",
+    "slow: Slow running tests",
+]

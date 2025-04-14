@@ -4,14 +4,10 @@ End-to-end tests for the insurance pricing system.
 
 import json
 import os
-import subprocess
 import tempfile
-import time
-import unittest
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-import requests
 from fastapi.testclient import TestClient
 
 from src.data.generator import InsuranceDataGenerator
@@ -51,14 +47,11 @@ class TestSystem(unittest.TestCase):
         os.environ["MODEL_PATH"] = cls.temp_dir.name
 
         # Use FastAPI TestClient instead of starting a real server
-        os.environ["MODEL_PATH"] = cls.temp_dir.name
         cls.client = TestClient(app)
 
     @classmethod
     def tearDownClass(cls):
         """Clean up test fixtures."""
-        # Clean up
-
         # Remove temporary directory
         cls.temp_dir.cleanup()
 

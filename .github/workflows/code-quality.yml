@@ -26,17 +26,17 @@ jobs:
     
     - name: Check formatting with black
       run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m black --check src/
+        uv run -m black --check src/
     
     - name: Check imports with isort
       run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m isort --check-only --profile black src/
+        uv run -m isort --check-only --profile black src/
     
     - name: Lint with flake8
       run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        uv run -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        uv run -m flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Type check with mypy
       run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) uv run -m mypy src/
+        uv run -m mypy src/
