@@ -44,7 +44,8 @@ venv.bak/
 # Project specific
 models/
 logs/
-src/data/
+data/
+!src/data/
 *.log
 *.joblib
 *.pkl

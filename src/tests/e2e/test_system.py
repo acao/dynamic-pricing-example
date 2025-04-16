@@ -13,10 +13,11 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-# If the above imports fail, try relative imports
-from data.generator import InsuranceDataGenerator
-from ml.app import app
-from ml.model import InsurancePricingModel
+# Try different import approaches to handle both local and CI environments
+
+from src.data.generator import InsuranceDataGenerator
+from src.ml.app import app
+from src.ml.model import InsurancePricingModel
 
 
 # Custom JSON encoder to handle Decimal values
