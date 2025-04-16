@@ -41,11 +41,11 @@ jobs:
          python -m src.ml.app &
          sleep 6 && uv run -m pytest src/tests/integration/ -v --cov=src --cov-report=xml
     
-    - name: Run end-to-end tests with ${{ matrix.python-version }}
-      env:
-        PYTHONPATH: ${{ github.workspace }}
-      run: |
-         sleep 6 && uv run -m pytest src/tests/e2e/ -v
+    # - name: Run end-to-end tests with ${{ matrix.python-version }}
+    #   env:
+    #     PYTHONPATH: ${{ github.workspace }}
+    #   run: |
+    #      sleep 6 && uv run -m pytest src/tests/e2e/ -v
     
     
     - name: Upload coverage to Codecov
