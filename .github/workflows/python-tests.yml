@@ -32,14 +32,14 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        python -m src.ml.app &
-        sleep 6 && uv run -m pytest src/tests/unit/ -v --cov=src --cov-report=xml
+       uv run -m pytest src/tests/unit/ -v --cov=src --cov-report=xml
     
     - name: Run integration tests with ${{ matrix.python-version }}
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        uv run -m pytest src/tests/integration/ -v --cov=src --cov-report=xml
+         python -m src.ml.app &
+         sleep 6 &&  uv run -m pytest src/tests/integration/ -v --cov=src --cov-report=xml
     
     # - name: Run end-to-end tests with ${{ matrix.python-version }}
     #   env:
