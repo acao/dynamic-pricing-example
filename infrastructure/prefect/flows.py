@@ -14,7 +14,6 @@ from typing import Dict, List, Optional, Tuple, Union
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import boto3
-import joblib
 import numpy as np
 import pandas as pd
 import snowflake.connector
