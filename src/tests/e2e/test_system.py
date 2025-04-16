@@ -6,22 +6,17 @@ import json
 import os
 import sys
 import tempfile
+import unittest
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-# Try different import approaches to handle both local and CI environments
-try:
-    from src.data.generator import InsuranceDataGenerator
-    from src.ml.app import app
-    from src.ml.model import InsurancePricingModel
-except ImportError:
-    # If the above imports fail, try relative imports
-    from data.generator import InsuranceDataGenerator
-    from ml.app import app
-    from ml.model import InsurancePricingModel
+# If the above imports fail, try relative imports
+from data.generator import InsuranceDataGenerator
+from ml.app import app
+from ml.model import InsurancePricingModel
 
 
 # Custom JSON encoder to handle Decimal values

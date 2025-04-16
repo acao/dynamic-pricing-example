@@ -24,9 +24,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv pip install -r requirements.txt
-        # Install the package in development mode to fix import issues
-        uv pip install -e .
+        uv venv
+        source .venv/bin/activate
+        uv pip install -r requirements.txt -e .
+
     
     - name: Run unit tests with ${{ matrix.python-version }}
       env:

@@ -14,41 +14,22 @@ import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 
-# Try different import approaches to handle both local and CI environments
-try:
-    from src.data.generator import InsuranceDataGenerator
-    from src.ml.model import InsurancePricingModel, PricingService
-    from src.ml.models import (
-        Driver,
-        DrivingHistory,
-        Gender,
-        IncidentSeverity,
-        IncidentType,
-        Location,
-        MaritalStatus,
-        Policy,
-        PricingFactors,
-        Vehicle,
-        VehicleUse,
-    )
-except ImportError:
-    # If the above imports fail, try relative imports
-    from data.generator import InsuranceDataGenerator
-    from ml.model import InsurancePricingModel, PricingService
-    from ml.models import (
-        Driver,
-        DrivingHistory,
-        Gender,
-        IncidentSeverity,
-        IncidentType,
-        Location,
-        MaritalStatus,
-        Policy,
-        PricingFactors,
-        Vehicle,
-        VehicleUse,
-    )
 
+from src.data.generator import InsuranceDataGenerator
+from src.ml.model import InsurancePricingModel, PricingService
+from src.ml.models import (
+    Driver,
+    DrivingHistory,
+    Gender,
+    IncidentSeverity,
+    IncidentType,
+    Location,
+    MaritalStatus,
+    Policy,
+    PricingFactors,
+    Vehicle,
+    VehicleUse,
+)
 
 class TestInsurancePricingModel(unittest.TestCase):
     """Test cases for the InsurancePricingModel class."""
