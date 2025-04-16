@@ -32,7 +32,7 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        uv run -m pytest src/tests/unit/ -v
+        uv run -m pytest -- src/tests/unit/ -v
     
     - name: Run integration tests with ${{ matrix.python-version }}
       env:
