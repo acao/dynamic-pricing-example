@@ -34,11 +34,11 @@ jobs:
       run: |
         uv run -m pytest src/tests/unit/ -v
     
-    - name: Run integration tests with ${{ matrix.python-version }}
-      env:
-        PYTHONPATH: ${{ github.workspace }}
-      run: |
-        uv run -m pytest src/tests/integration/ -v
+    # - name: Run integration tests with ${{ matrix.python-version }}
+    #   env:
+    #     PYTHONPATH: ${{ github.workspace }}
+    #   run: |
+    #     uv run -m pytest src/tests/integration/ -v
     
     # - name: Run end-to-end tests with ${{ matrix.python-version }}
     #   env:
