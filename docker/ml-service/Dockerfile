@@ -14,7 +14,7 @@ COPY requirements.txt .
 # Install uv
 RUN pip install --no-cache-dir uv
 RUN uv venv
-RUN uv .venv/bin/activate
+RUN source .venv/bin/activate
 
 # Install Python dependencies
 RUN uv pip install --no-cache-dir -r requirements.txt

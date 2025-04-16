@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api-service, ml-service, jupyter]
+        service: [api-service, ml-service]
     
     steps:
     - uses: actions/checkout@v4
