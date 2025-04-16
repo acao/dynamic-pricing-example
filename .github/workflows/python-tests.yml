@@ -32,13 +32,15 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        uv run -m pytest src/tests/unit/ -v
+        python -m src.ml.app
+        sleep 6
+        uv run -m pytest src/tests/unit/ -v --cov=src --cov-report=xml
     
-    # - name: Run integration tests with ${{ matrix.python-version }}
-    #   env:
-    #     PYTHONPATH: ${{ github.workspace }}
-    #   run: |
-    #     uv run -m pytest src/tests/integration/ -v
+    - name: Run integration tests with ${{ matrix.python-version }}
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+      run: |
+        uv run -m pytest src/tests/integration/ -v --cov=src --cov-report=xml
     
     # - name: Run end-to-end tests with ${{ matrix.python-version }}
     #   env:
@@ -46,11 +48,6 @@ jobs:
     #   run: |
     #     uv run -m pytest src/tests/e2e/ -v
     
-    - name: Generate coverage report
-      env:
-        PYTHONPATH: ${{ github.workspace }}
-      run: |
-        uv run -m pytest --cov=src --cov-report=xml
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
