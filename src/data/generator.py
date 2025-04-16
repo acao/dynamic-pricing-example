@@ -1,6 +1,7 @@
 """
 Data generator for creating synthetic insurance data.
 """
+
 import logging
 import random
 from datetime import date, datetime, timedelta
@@ -31,10 +32,10 @@ fake = Faker()
 
 class InsuranceDataGenerator:
     """Generate synthetic insurance data for training and testing."""
-    
+
     def __init__(self, seed: Optional[int] = None):
         """Initialize the data generator.
-        
+
         Args:
             seed: Random seed for reproducibility
         """
@@ -43,12 +44,12 @@ class InsuranceDataGenerator:
             random.seed(seed)
             np.random.seed(seed)
             fake.seed_instance(seed)
-        
+
         # Load reference data
         self.vehicle_makes_models = self._load_vehicle_makes_models()
         self.occupation_list = self._load_occupations()
         self.state_zip_codes = self._load_state_zip_codes()
-    
+
     def _load_vehicle_makes_models(self) -> Dict[str, List[str]]:
         """Load vehicle makes and models."""
         # In a real implementation, this would load from a database or file
@@ -65,22 +66,51 @@ class InsuranceDataGenerator:
             "Tesla": ["Model 3", "Model Y", "Model S", "Model X", "Cybertruck"],
             "Subaru": ["Outback", "Forester", "Crosstrek", "Impreza", "Legacy"],
         }
-    
+
     def _load_occupations(self) -> List[str]:
         """Load occupations."""
         # In a real implementation, this would load from a database or file
         # For now, we'll use a simple list
         return [
-            "Accountant", "Actor", "Architect", "Artist", "Attorney",
-            "Baker", "Barber", "Carpenter", "Chef", "Chemist",
-            "Dentist", "Designer", "Doctor", "Driver", "Electrician",
-            "Engineer", "Farmer", "Firefighter", "Journalist", "Lawyer",
-            "Mechanic", "Nurse", "Pharmacist", "Pilot", "Plumber",
-            "Police Officer", "Professor", "Programmer", "Salesperson", "Scientist",
-            "Student", "Teacher", "Technician", "Veterinarian", "Writer",
-            "Retired", "Unemployed",
+            "Accountant",
+            "Actor",
+            "Architect",
+            "Artist",
+            "Attorney",
+            "Baker",
+            "Barber",
+            "Carpenter",
+            "Chef",
+            "Chemist",
+            "Dentist",
+            "Designer",
+            "Doctor",
+            "Driver",
+            "Electrician",
+            "Engineer",
+            "Farmer",
+            "Firefighter",
+            "Journalist",
+            "Lawyer",
+            "Mechanic",
+            "Nurse",
+            "Pharmacist",
+            "Pilot",
+            "Plumber",
+            "Police Officer",
+            "Professor",
+            "Programmer",
+            "Salesperson",
+            "Scientist",
+            "Student",
+            "Teacher",
+            "Technician",
+            "Veterinarian",
+            "Writer",
+            "Retired",
+            "Unemployed",
         ]
-    
+
     def _load_state_zip_codes(self) -> Dict[str, List[str]]:
         """Load state zip codes."""
         # In a real implementation, this would load from a database or file
@@ -137,13 +167,13 @@ class InsuranceDataGenerator:
             "WI": ["53001", "53002", "53003", "53004", "53005"],
             "WY": ["82001", "82002", "82003", "82005", "82006"],
         }
-    
+
     def generate_driver(self) -> Driver:
         """Generate a random driver."""
         # Generate basic driver information
         first_name = fake.first_name()
         last_name = fake.last_name()
-        
+
         # Generate date of birth (between 18 and 80 years ago)
         min_age = 18
         max_age = 80
@@ -151,33 +181,35 @@ class InsuranceDataGenerator:
         min_days = int(min_age * days_in_year)
         max_days = int(max_age * days_in_year)
         dob = fake.date_of_birth(minimum_age=min_age, maximum_age=max_age)
-        
+
         # Generate license issue date (at least 16 years after birth, but not before 16 years ago)
         min_license_age = 16
         min_license_date = date(dob.year + min_license_age, dob.month, dob.day)
         max_license_date = date.today()
-        
+
         if min_license_date > max_license_date:
             # This would happen if the person is younger than the minimum license age
             min_license_date = max_license_date
-        
+
         license_issue_date = fake.date_between(min_license_date, max_license_date)
-        
+
         # Generate license state
         license_state = random.choice(list(self.state_zip_codes.keys()))
-        
+
         # Generate license number
-        license_number = fake.bothify(text="?######", letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-        
+        license_number = fake.bothify(
+            text="?######", letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        )
+
         # Generate gender
         gender = random.choice(list(Gender))
-        
+
         # Generate marital status
         marital_status = random.choice(list(MaritalStatus))
-        
+
         # Generate occupation
         occupation = random.choice(self.occupation_list)
-        
+
         return Driver(
             first_name=first_name,
             last_name=last_name,
@@ -189,32 +221,34 @@ class InsuranceDataGenerator:
             marital_status=marital_status,
             occupation=occupation,
         )
-    
+
     def generate_vehicle(self) -> Vehicle:
         """Generate a random vehicle."""
         # Generate make and model
         make = random.choice(list(self.vehicle_makes_models.keys()))
         model = random.choice(self.vehicle_makes_models[make])
-        
+
         # Generate year (between 1 and 15 years old)
         current_year = date.today().year
         year = random.randint(current_year - 15, current_year)
-        
+
         # Generate VIN
         vin = fake.bothify(text="1??????????????#", letters="ABCDEFGHJKLMNPRSTUVWXYZ")
-        
+
         # Generate value (between $5,000 and $50,000)
         value = random.uniform(5000, 50000)
-        
+
         # Generate primary use
         primary_use = random.choice(list(VehicleUse))
-        
+
         # Generate annual mileage (between 5,000 and 25,000)
         annual_mileage = random.randint(5000, 25000)
-        
+
         # Generate anti-theft device
-        anti_theft_device = random.random() < 0.3  # 30% chance of having an anti-theft device
-        
+        anti_theft_device = (
+            random.random() < 0.3
+        )  # 30% chance of having an anti-theft device
+
         return Vehicle(
             make=make,
             model=model,
@@ -225,7 +259,7 @@ class InsuranceDataGenerator:
             annual_mileage=annual_mileage,
             anti_theft_device=anti_theft_device,
         )
-    
+
     def generate_driving_history(self, driver: Driver) -> List[DrivingHistory]:
         """Generate random driving history for a driver."""
         # Determine number of incidents (more likely for younger drivers)
@@ -242,70 +276,77 @@ class InsuranceDataGenerator:
         else:
             max_incidents = 1
             incident_probability = 0.2
-        
+
         # Determine if driver has incidents
         if random.random() > incident_probability:
             return []  # No incidents
-        
+
         # Generate random number of incidents
         num_incidents = random.randint(1, max_incidents)
-        
+
         # Generate incidents
         incidents = []
         for _ in range(num_incidents):
             # Generate incident type
             incident_type = random.choice(list(IncidentType))
-            
+
             # Generate incident date (within the last 5 years)
-            incident_date = fake.date_between(date.today() - timedelta(days=5*365), date.today())
-            
+            incident_date = fake.date_between(
+                date.today() - timedelta(days=5 * 365), date.today()
+            )
+
             # Generate severity
             severity = random.choice(list(IncidentSeverity))
-            
+
             # Generate claim amount (if applicable)
             claim_amount = None
-            if incident_type == IncidentType.CLAIM or incident_type == IncidentType.ACCIDENT:
+            if (
+                incident_type == IncidentType.CLAIM
+                or incident_type == IncidentType.ACCIDENT
+            ):
                 if severity == IncidentSeverity.MINOR:
                     claim_amount = random.uniform(500, 2000)
                 elif severity == IncidentSeverity.MODERATE:
                     claim_amount = random.uniform(2000, 5000)
                 else:  # MAJOR
                     claim_amount = random.uniform(5000, 15000)
-            
+
             # Generate at-fault status
             at_fault = random.random() < 0.7  # 70% chance of being at fault
-            
-            incidents.append(DrivingHistory(
-                incident_type=incident_type,
-                incident_date=incident_date,
-                severity=severity,
-                claim_amount=claim_amount,
-                at_fault=at_fault,
-            ))
-        
+
+            incidents.append(
+                DrivingHistory(
+                    incident_type=incident_type,
+                    incident_date=incident_date,
+                    severity=severity,
+                    claim_amount=claim_amount,
+                    at_fault=at_fault,
+                )
+            )
+
         return incidents
-    
+
     def generate_location(self) -> Location:
         """Generate a random location."""
         # Generate state
         state = random.choice(list(self.state_zip_codes.keys()))
-        
+
         # Generate zip code
         zip_code = random.choice(self.state_zip_codes[state])
-        
+
         # Generate address
         address_line1 = fake.street_address()
         city = fake.city()
-        
+
         # Generate optional address line 2
         address_line2 = None
         if random.random() < 0.3:  # 30% chance of having address line 2
             address_line2 = fake.secondary_address()
-        
+
         # Generate coordinates
         latitude = fake.latitude()
         longitude = fake.longitude()
-        
+
         return Location(
             address_line1=address_line1,
             city=city,
@@ -315,30 +356,30 @@ class InsuranceDataGenerator:
             latitude=latitude,
             longitude=longitude,
         )
-    
+
     def generate_pricing_factors(self) -> PricingFactors:
         """Generate random pricing factors."""
         # Generate credit score (between 300 and 850)
         credit_score = random.uniform(300, 850)
-        
+
         # Generate insurance score (between 0 and 100)
         insurance_score = random.uniform(0, 100)
-        
+
         # Generate territory code
         territory_code = fake.bothify(text="??##", letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-        
+
         # Generate territory factor (between 0.8 and 1.5)
         territory_factor = random.uniform(0.8, 1.5)
-        
+
         # Generate driver factor (between 0.8 and 1.5)
         driver_factor = random.uniform(0.8, 1.5)
-        
+
         # Generate vehicle factor (between 0.8 and 1.5)
         vehicle_factor = random.uniform(0.8, 1.5)
-        
+
         # Generate history factor (between 0.8 and 1.5)
         history_factor = random.uniform(0.8, 1.5)
-        
+
         return PricingFactors(
             credit_score=credit_score,
             insurance_score=insurance_score,
@@ -348,7 +389,7 @@ class InsuranceDataGenerator:
             vehicle_factor=vehicle_factor,
             history_factor=history_factor,
         )
-    
+
     def generate_policy(
         self,
         num_drivers: Optional[int] = None,
@@ -360,38 +401,42 @@ class InsuranceDataGenerator:
         # Generate number of drivers, vehicles, and locations
         if num_drivers is None:
             num_drivers = random.randint(1, 3)
-        
+
         if num_vehicles is None:
             num_vehicles = random.randint(1, 3)
-        
+
         if num_locations is None:
             num_locations = random.randint(1, 2)
-        
+
         # Generate effective date (within the last year)
-        effective_date = fake.date_between(date.today() - timedelta(days=365), date.today())
-        
+        effective_date = fake.date_between(
+            date.today() - timedelta(days=365), date.today()
+        )
+
         # Generate expiration date (1 year after effective date)
         expiration_date = date(
             effective_date.year + 1, effective_date.month, effective_date.day
         )
-        
+
         # Generate drivers
         drivers = [self.generate_driver() for _ in range(num_drivers)]
-        
+
         # Generate vehicles
         vehicles = [self.generate_vehicle() for _ in range(num_vehicles)]
-        
+
         # Generate locations
         locations = [self.generate_location() for _ in range(num_locations)]
-        
+
         # Generate driving history for each driver
         driving_history = []
         for driver in drivers:
             driving_history.extend(self.generate_driving_history(driver))
-        
+
         # Generate pricing factors
-        pricing_factors = self.generate_pricing_factors() if include_pricing_factors else None
-        
+        pricing_factors = (
+            self.generate_pricing_factors() if include_pricing_factors else None
+        )
+
         return Policy(
             effective_date=effective_date,
             expiration_date=expiration_date,
@@ -401,7 +446,7 @@ class InsuranceDataGenerator:
             driving_history=driving_history,
             pricing_factors=pricing_factors,
         )
-    
+
     def generate_policies(
         self,
         num_policies: int,
@@ -412,17 +457,17 @@ class InsuranceDataGenerator:
             self.generate_policy(include_pricing_factors=include_pricing_factors)
             for _ in range(num_policies)
         ]
-    
+
     def generate_premium(self, policy: Policy) -> float:
         """Generate a premium for a policy based on its characteristics."""
         # Base premium
         base_premium = 1000.0
-        
+
         # Driver factors
         driver_age_factor = 1.0
         driver_experience_factor = 1.0
         driver_occupation_factor = 1.0
-        
+
         for driver in policy.drivers:
             # Age factor
             if driver.age < 25:
@@ -431,31 +476,31 @@ class InsuranceDataGenerator:
                 driver_age_factor *= 1.2
             elif driver.age > 65:
                 driver_age_factor *= 1.3
-            
+
             # Experience factor
             if driver.driving_experience < 3:
                 driver_experience_factor *= 1.4
             elif driver.driving_experience < 10:
                 driver_experience_factor *= 1.1
-            
+
             # Occupation factor
             if driver.occupation in ["Driver", "Pilot"]:
                 driver_occupation_factor *= 1.2
             elif driver.occupation in ["Student", "Unemployed"]:
                 driver_occupation_factor *= 1.1
-        
+
         # Vehicle factors
         vehicle_age_factor = 1.0
         vehicle_value_factor = 1.0
         vehicle_use_factor = 1.0
-        
+
         for vehicle in policy.vehicles:
             # Age factor
             if vehicle.vehicle_age < 3:
                 vehicle_age_factor *= 1.2
             elif vehicle.vehicle_age > 10:
                 vehicle_age_factor *= 1.1
-            
+
             # Value factor
             if vehicle.value > 30000:
                 vehicle_value_factor *= 1.3
@@ -463,18 +508,18 @@ class InsuranceDataGenerator:
                 vehicle_value_factor *= 1.2
             elif vehicle.value > 10000:
                 vehicle_value_factor *= 1.1
-            
+
             # Use factor
             if vehicle.primary_use == VehicleUse.BUSINESS:
                 vehicle_use_factor *= 1.3
             elif vehicle.primary_use == VehicleUse.COMMUTE:
                 vehicle_use_factor *= 1.1
-        
+
         # Driving history factors
         accident_factor = 1.0
         violation_factor = 1.0
         claim_factor = 1.0
-        
+
         for history in policy.driving_history:
             if history.incident_type == IncidentType.ACCIDENT:
                 if history.severity == IncidentSeverity.MAJOR:
@@ -483,7 +528,7 @@ class InsuranceDataGenerator:
                     accident_factor *= 1.3
                 else:
                     accident_factor *= 1.1
-            
+
             elif history.incident_type == IncidentType.VIOLATION:
                 if history.severity == IncidentSeverity.MAJOR:
                     violation_factor *= 1.4
@@ -491,7 +536,7 @@ class InsuranceDataGenerator:
                     violation_factor *= 1.2
                 else:
                     violation_factor *= 1.1
-            
+
             elif history.incident_type == IncidentType.CLAIM:
                 if history.claim_amount and history.claim_amount > 5000:
                     claim_factor *= 1.4
@@ -499,10 +544,10 @@ class InsuranceDataGenerator:
                     claim_factor *= 1.2
                 else:
                     claim_factor *= 1.1
-        
+
         # Location factors
         location_factor = 1.0
-        
+
         for location in policy.locations:
             # Urban/suburban/rural factor based on zip code
             first_digit = location.zip_code[0]
@@ -510,7 +555,7 @@ class InsuranceDataGenerator:
                 location_factor *= 1.2
             elif first_digit in ["4", "5", "6"]:  # Suburban
                 location_factor *= 1.1
-        
+
         # Calculate final premium
         premium = base_premium
         premium *= driver_age_factor
@@ -523,13 +568,13 @@ class InsuranceDataGenerator:
         premium *= violation_factor
         premium *= claim_factor
         premium *= location_factor
-        
+
         # Add some random noise (±10%)
         noise_factor = random.uniform(0.9, 1.1)
         premium *= noise_factor
-        
+
         return premium
-    
+
     def generate_dataset(
         self,
         num_policies: int,
@@ -538,5 +583,5 @@ class InsuranceDataGenerator:
         """Generate a dataset of policies and premiums."""
         policies = self.generate_policies(num_policies, include_pricing_factors)
         premiums = [self.generate_premium(policy) for policy in policies]
-        
+
         return policies, premiums

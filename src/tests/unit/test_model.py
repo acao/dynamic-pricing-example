@@ -31,6 +31,7 @@ from src.ml.models import (
     VehicleUse,
 )
 
+
 class TestInsurancePricingModel(unittest.TestCase):
     """Test cases for the InsurancePricingModel class."""
 
